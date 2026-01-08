@@ -122,8 +122,17 @@ class RestServlet : HttpServlet() {
         restList.add(Restaurant("FgTdMAgT", "아임셰프", "11:00 ~ 14:00", "7,000원", "174m", "https://search.pstatic.net/common/?src=https%3A%2F%2Fpup-review-phinf.pstatic.net%2FMjAyNTA1MTZfMjk5%2FMDAxNzQ3Mzg2MzgyMDgw.0_fPvRxT52Z6Uve5_Kx4WeGrZTKa80e4Fvqy0Cf2xaUg.J43D01pdQxKkIZHQqXFPD9Rk_lttTuqh4NpEllKx2Lgg.JPEG%2F20250516_135905.jpg.jpg%3Ftype%3Dw1500_60_sharpen", "https://map.naver.com/p/directions/14124201.6742886,4505730.5501538,%EB%8B%A8%EB%B9%84%EC%95%84%EC%9D%B4%EC%97%94%EC%94%A8,1337038683,PLACE_POI/14124099.6388433,4505929.4282073,%EC%95%84%EC%9E%84%EC%85%B0%ED%94%84%20%EA%B5%AC%EB%82%B4%EC%8B%9D%EB%8B%B9,1566768349,PLACE_POI/-/walk?c=18.00,0,0,0,dh", "https://pf.kakao.com/_FQrfn") {
             val json = "https://pf.kakao.com/rocket-web/web/v2/profiles/_FQrfn".connectHttpClient()
 
-            val menuImage = json.get("cards")?.get(0)?.get("profile")?.get("profile_image")?.get("xlarge_url")?.asText() ?: throw RuntimeException("not found menu")
-            val monthDay : MonthDay? = null
+            val todayMenu = json.get("cards")?.find { it.get("title")?.asText() == "소식" }?.get("posts")?.get(1)
+            val menuImage = todayMenu?.get("media")?.get(0)?.get("xlarge_url")?.asText() ?: throw RuntimeException("not found menu")
+            val monthDay : MonthDay? = """오늘의 메뉴 \d+\.\d+""".toRegex()
+                .find(todayMenu.get("title")?.asText() ?: "")
+                ?.value
+                ?.let {
+                    MonthDay.parse(
+                        it,
+                        DateTimeFormatter.ofPattern("오늘의 메뉴 M.d")
+                    )
+                }
 
             Pair(menuImage, monthDay)
         })
@@ -148,7 +157,7 @@ class RestServlet : HttpServlet() {
 
             val menuImage = todayMenu?.get("image_versions2")?.get("candidates")?.get(0)?.get("url")?.asText() ?: throw RuntimeException("not found menu")
             val monthDay : MonthDay? = """\d+월 \d+일""".toRegex()
-                .find(todayMenu.get("caption")?.get("text")?.asText() ?: "")
+                .find(todayMenu.get("title")?.asText() ?: "")
                 ?.value
                 ?.let {
                     MonthDay.parse(
